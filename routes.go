@@ -25,16 +25,20 @@ func AddAppRoutes(route *mux.Router) {
 
 	route.HandleFunc("/", handlers.RenderHome).Methods("GET")
 
-	route.HandleFunc("/ws/{username}", func(w http.ResponseWriter, r *http.Request) {
+	route.HandleFunc("/room-exists/{room}", handlers.CheckRoomExists(hub)).Methods("GET")
+
+	route.HandleFunc("/ws/{room}/{username}", func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 			CheckOrigin: func(r *http.Request) bool {
-				return true // Accept requests from any origin (good for dev)
+				return true
 			},
 		}
 
-		username := mux.Vars(r)["username"]
+		vars := mux.Vars(r)
+		username := vars["username"]
+		room := vars["room"]
 
 		connection, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -42,7 +46,7 @@ func AddAppRoutes(route *mux.Router) {
 			return
 		}
 
-		handlers.CreateNewClient(hub, connection, username)
+		handlers.CreateNewClient(hub, connection, username, room)
 	})
 
 	log.Println("Routes are now loaded")

@@ -16,12 +16,13 @@ const (
 	maxMessageSize = 1024
 )
 
-func CreateNewClient(hub *Hub, connection *websocket.Conn, username string) {
+func CreateNewClient(hub *Hub, connection *websocket.Conn, username string, roomId string) {
 	client := &Client{
 		hub:        hub,
 		connection: connection,
 		send:       make(chan SocketEvent),
 		username:   username,
+		roomId:     roomId,
 	}
 
 	client.hub.register <- client
@@ -31,7 +32,10 @@ func CreateNewClient(hub *Hub, connection *websocket.Conn, username string) {
 }
 
 func HandleRegisterClient(hub *Hub, client *Client) {
-	hub.clients[client] = true
+	if hub.rooms[client.roomId] == nil {
+		hub.rooms[client.roomId] = make(map[*Client]bool)
+	}
+	hub.rooms[client.roomId][client] = true
 
 	handleSocketPayloadEvents(client, SocketEvent{
 		EventName:    "join",
@@ -40,9 +44,12 @@ func HandleRegisterClient(hub *Hub, client *Client) {
 }
 
 func HandleUnregisterClient(hub *Hub, client *Client) {
-	_, ok := hub.clients[client]
+	_, ok := hub.rooms[client.roomId][client]
 	if ok {
-		delete(hub.clients, client)
+		delete(hub.rooms[client.roomId], client)
+		if len(hub.rooms[client.roomId]) == 0 {
+			delete(hub.rooms, client.roomId)
+		}
 		close(client.send)
 
 		handleSocketPayloadEvents(client, SocketEvent{
@@ -53,12 +60,15 @@ func HandleUnregisterClient(hub *Hub, client *Client) {
 }
 
 func HandleBroadcast(hub *Hub, payload SocketEvent) {
-	for client := range hub.clients {
+	for client := range hub.rooms[payload.roomId] {
 		select {
 		case client.send <- payload:
 		default:
 			close(client.send)
-			delete(hub.clients, client)
+			delete(hub.rooms[client.roomId], client)
+			if len(hub.rooms[client.roomId]) == 0 {
+				delete(hub.rooms, client.roomId)
+			}
 		}
 	}
 }
@@ -69,17 +79,20 @@ func handleSocketPayloadEvents(client *Client, payload SocketEvent) {
 	case "join":
 		log.Println("Join event triggered")
 		client.hub.broadcast <- SocketEvent{
+			roomId:       client.roomId,
 			EventName:    "join",
 			EventPayload: payload.EventPayload,
 		}
 	case "disconnect":
 		log.Println("Disconnect event triggered")
 		client.hub.broadcast <- SocketEvent{
+			roomId:       client.roomId,
 			EventName:    "disconnect",
 			EventPayload: payload.EventPayload,
 		}
 	case "message":
 		log.Println("Message event triggered")
+		response.roomId = client.roomId
 		response.EventName = "message_response"
 		response.EventPayload = map[string]any{
 			"username": client.username,

@@ -4,7 +4,7 @@ func NewHub() *Hub {
 	return &Hub{
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
+		rooms:      make(map[string]map[*Client]bool),
 		broadcast:  make(chan SocketEvent, 32),
 	}
 }
@@ -12,8 +12,9 @@ func NewHub() *Hub {
 func (hub *Hub) Run() {
 
 	defer func() {
-		if r := recover(); r != nil {
-		}
+		close(hub.register)
+		close(hub.unregister)
+		close(hub.broadcast)
 	}()
 
 	go func() {

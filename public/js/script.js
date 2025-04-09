@@ -6,40 +6,37 @@ class App extends React.Component {
         this.state = {
             messages: [],
             username: "",
-        }
+            roomId: "",
+            connected: false,
+            inputName: "",
+            inputRoomId: "",
+        };
         this.username = "";
         this.webSocketConnection = null;
     }
 
-    componentDidMount() {
-        this.setWebSocketConnection();
-        this.subscribeToSocketMessage();
-    }
+    setWebSocketConnection = (roomId, username) => {
+        this.username = username;
+        this.setState({
+            username: username,
+            roomId: roomId
+        });
 
-    setWebSocketConnection() {
-        const username = prompt("What's Your name");
-        this.setState({ username })
-        this.username = username
         if (window["WebSocket"]) {
-            const socketConnection = new WebSocket("ws://" + document.location.host + "/ws/" + username);
+            const socketConnection = new WebSocket(`ws://${document.location.host}/ws/${roomId}/${username}`);
             this.webSocketConnection = socketConnection;
+            this.setState({ connected: true });
+            this.subscribeToSocketMessage();
         }
-    }
+    };
 
     subscribeToSocketMessage = () => {
-        if (this.webSocketConnection === null) {
-            return;
-        }
+        if (!this.webSocketConnection) return;
 
         this.webSocketConnection.onclose = () => {
-            const messages = this.state.messages;
-            messages.push({
-                message: 'Your Connection is closed.',
-                type: 'announcement'
-            })
-            this.setState({
-                messages
-            });
+            this.setState(prev => ({
+                messages: [...prev.messages, { message: 'Your connection is closed.', type: 'announcement' }],
+            }));
         };
 
         this.webSocketConnection.onmessage = (event) => {
@@ -47,96 +44,91 @@ class App extends React.Component {
                 const socketPayload = JSON.parse(event.data);
                 switch (socketPayload.EventName) {
                     case 'join':
-                        if (!socketPayload.EventPayload) {
-                            return
-                        }
-
-                        this.setState({
-                            messages: [
-                                ...this.state.messages,
-                                ...[{
-                                    message: `${socketPayload.EventPayload} joined the chat`,
-                                    type: 'announcement'
-                                }]
-                            ]
-                        });
-
+                        this.addAnnouncement(`${socketPayload.EventPayload} joined the chat`);
                         break;
                     case 'disconnect':
-                        if (!socketPayload.EventPayload) {
-                            return
-                        }
-                        this.setState({
-                            messages: [
-                                ...this.state.messages,
-                                ...[{
-                                    message: `${socketPayload.EventPayload} left the chat`,
-                                    type: 'announcement'
-                                }]
-                            ]
-                        });
+                        this.addAnnouncement(`${socketPayload.EventPayload} left the chat`);
                         break;
-
                     case 'message_response':
-
-                        if (!socketPayload.EventPayload) {
-                            return
-                        }
-
-                        const messageContent = socketPayload.EventPayload;
-                        const sentBy = messageContent.username ? messageContent.username : 'An unnamed fellow'
-                        const actualMessage = messageContent.message;
-
-                        this.setState({
-                            messages: [
-                                ...this.state.messages,
-                                {
-                                    message: actualMessage,
-                                    username: `${sentBy}`,
+                        if (socketPayload.EventPayload) {
+                            const { username, message } = socketPayload.EventPayload;
+                            this.setState(prev => ({
+                                messages: [...prev.messages, {
+                                    message,
+                                    username: username || 'An unnamed fellow',
                                     type: 'message'
-                                }
-                            ]
-                        });
-
+                                }]
+                            }));
+                        }
                         break;
-
                     default:
                         break;
                 }
+
                 setTimeout(() => {
                     const container = document.querySelector('.message-container');
-                    container.scrollTop = container.scrollHeight;
+                    if (container) container.scrollTop = container.scrollHeight;
                 }, 100);
             } catch (error) {
-                console.log(error)
-                console.warn('Something went wrong while decoding the Message Payload')
+                console.error("Error decoding message payload", error);
             }
         };
-    }
+    };
+
+    addAnnouncement = (text) => {
+        this.setState(prev => ({
+            messages: [...prev.messages, { message: text, type: 'announcement' }]
+        }));
+    };
 
     handleKeyPress = (event) => {
-        try {
-            if (event.key === 'Enter') {
-                if (!this.webSocketConnection) {
-                    return false;
-                }
-                if (!event.target.value) {
-                    return false;
-                }
+        if (event.key === 'Enter') {
+            const value = event.target.value.trim();
+            if (!value || !this.webSocketConnection) return;
 
-                this.webSocketConnection.send(JSON.stringify({
-                    EventName: 'message',
-                    EventPayload: event.target.value
-                }));
+            this.webSocketConnection.send(JSON.stringify({
+                EventName: 'message',
+                EventPayload: value
+            }));
 
-                event.target.value = '';
-                event.target.focus();
-            }
-        } catch (error) {
-            console.log(error)
-            console.warn('Something went wrong while decoding the Message Payload')
+            event.target.value = '';
         }
-    }
+    };
+
+    handleCreateRoom = () => {
+        const username = this.state.inputName.trim();
+        if (!username) {
+            alert("Please enter your name.");
+            return;
+        }
+        const roomId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        console.log(roomId);
+        this.setWebSocketConnection(roomId, username);
+    };
+
+    handleJoinRoom = async () => {
+        const username = this.state.inputName.trim();
+        const roomId = this.state.inputRoomId.trim();
+
+        if (!username || !roomId) {
+            alert("Please enter your name and a Room ID.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/room-exists/${roomId}`);
+            const data = await res.json();
+
+            if (data.exists) {
+                this.setWebSocketConnection(roomId, username);
+            } else {
+                alert("Room does not exist.");
+            }
+        } catch (err) {
+            console.error("Failed to check room:", err);
+            alert("Error checking room existence.");
+        }
+    };
 
     getChatMessages() {
         return (
@@ -149,9 +141,7 @@ class App extends React.Component {
                                 key={index}
                                 className={`message-payload ${isOwnMessage ? "own-message" : "other-message"}`}
                             >
-                                {m.username && (
-                                    <span className="username">{m.username} says:</span>
-                                )}
+                                {m.username && <span className="username">{m.username} says:</span>}
                                 <span className={`message ${m.type === "announcement" ? "announcement" : ""}`}>
                                     {m.message}
                                 </span>
@@ -166,11 +156,48 @@ class App extends React.Component {
     render() {
         return (
             <>
-                {this.getChatMessages()}
-                <input type="text" id="message-text" size="64" autoFocus placeholder="Type Your message" onKeyPress={this.handleKeyPress} />
+                {!this.state.connected ? (
+                    <div style={{ padding: "20px", textAlign: "center" }}>
+                        <h2>Welcome to the Chat App</h2>
+                        <div style={{ marginBottom: "10px" }}>
+                            <input
+                                type="text"
+                                placeholder="Enter your name"
+                                value={this.state.inputName}
+                                onChange={(e) => this.setState({ inputName: e.target.value })}
+                                style={{ padding: "10px", width: "60%" }}
+                                autoFocus
+                            />
+                        </div>
+                        <div style={{ marginBottom: "10px" }}>
+                            <input
+                                type="text"
+                                placeholder="Room ID (for joining)"
+                                value={this.state.inputRoomId}
+                                onChange={(e) => this.setState({ inputRoomId: e.target.value })}
+                                style={{ padding: "10px", width: "60%" }}
+                            />
+                        </div>
+                        <button onClick={this.handleCreateRoom}>Create Room</button>
+                        <button onClick={this.handleJoinRoom} style={{ marginLeft: "10px" }}>Join Room</button>
+                    </div>
+                ) : (
+                    <>
+                        <h3 style={{ textAlign: "center" }}>Room ID: {this.state.roomId}</h3>
+                        {this.getChatMessages()}
+                        <input
+                            type="text"
+                            id="message-text"
+                            size="64"
+                            autoFocus
+                            placeholder="Type your message"
+                            onKeyPress={this.handleKeyPress}
+                        />
+                    </>
+                )}
             </>
         );
     }
 }
 
-ReactDOM.render(<App />, domElement)
+ReactDOM.render(<App />, domElement);
