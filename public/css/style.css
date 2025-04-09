@@ -1,0 +1,101 @@
+
+/* Reset & Base Styling */
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+body {
+    width: 100%;
+    height: 100vh;
+    background-color: #f4f4f4;
+}
+
+/* Chat Container */
+.chat__app-container {
+    width: 70%;
+    height: 90%;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Message Area */
+.message-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #fdfdfd;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Message Blocks */
+.message-payload {
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    max-width: 60%;
+    word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Your Messages */
+.own-message {
+    align-self: flex-end;
+    background-color: #dcf8c6; /* WhatsApp-like green */
+    color: #111;
+    text-align: right;
+    border-bottom-right-radius: 0;
+}
+
+/* Others' Messages */
+.other-message {
+    align-self: flex-start;
+    background-color: #e1f5fe; /* Light blue */
+    color: #111;
+    text-align: left;
+    border-bottom-left-radius: 0;
+}
+
+/* Username Display */
+.username {
+    font-size: 12px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+/* Message Text */
+.message {
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+/* Announcements */
+.announcement {
+    display: block;
+    font-size: 16px;
+    text-align: center;
+    color: #666;
+    margin: 10px 0;
+    font-style: italic;
+}
+
+/* Input Field */
+input {
+    font-size: 18px;
+    padding: 12px 10px;
+    border: none;
+    border-top: 1px solid #ccc;
+    outline: none;
+}
+
