@@ -13,7 +13,7 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = (9 * pongWait) / 10
-	maxMessageSize = 1024
+	maxMessageSize = 10 * 1024 * 1024
 )
 
 func CreateNewClient(hub *Hub, connection *websocket.Conn, username string, roomId string) {
@@ -99,6 +99,29 @@ func handleSocketPayloadEvents(client *Client, payload SocketEvent) {
 			"message":  payload.EventPayload,
 		}
 		client.hub.broadcast <- response
+	case "file_chunk":
+		data := payload.EventPayload.(map[string]any)
+		username := client.username
+		fileName := data["fileName"].(string)
+		fileType := data["fileType"].(string)
+		fileData := data["fileData"].(string)
+		totalChunks := int(data["totalChunks"].(float64))
+		chunkIndex := int(data["chunkIndex"].(float64))
+
+		log.Printf("Received chunk %d of %d for %s", chunkIndex+1, totalChunks, fileName)
+
+		client.hub.broadcast <- SocketEvent{
+			roomId:    client.roomId,
+			EventName: "file_chunk_response",
+			EventPayload: map[string]any{
+				"username":    username,
+				"fileName":    fileName,
+				"fileType":    fileType,
+				"fileData":    fileData,
+				"chunkIndex":  chunkIndex,
+				"totalChunks": totalChunks,
+			},
+		}
 	}
 }
 

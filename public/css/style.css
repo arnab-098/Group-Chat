@@ -1,4 +1,3 @@
-
 /* Reset & Base Styling */
 * {
     padding: 0;
@@ -7,24 +6,25 @@
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
-body {
-    width: 100%;
-    height: 100vh;
+html, body {
+    height: 100%;
     background-color: #f4f4f4;
 }
 
 /* Chat Container */
 .chat__app-container {
-    width: 70%;
-    height: 90%;
-    margin: 20px auto;
+    height: 100vh;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    background: #fff;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+}
+
+/* Chat Screen */
+.chat-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
 }
 
 /* Message Area */
@@ -51,7 +51,7 @@ body {
 /* Your Messages */
 .own-message {
     align-self: flex-end;
-    background-color: #dcf8c6; /* WhatsApp-like green */
+    background-color: #dcf8c6;
     color: #111;
     text-align: right;
     border-bottom-right-radius: 0;
@@ -60,7 +60,7 @@ body {
 /* Others' Messages */
 .other-message {
     align-self: flex-start;
-    background-color: #e1f5fe; /* Light blue */
+    background-color: #e1f5fe;
     color: #111;
     text-align: left;
     border-bottom-left-radius: 0;
@@ -90,15 +90,48 @@ body {
     font-style: italic;
 }
 
-/* Input Field */
-input {
-    font-size: 18px;
-    padding: 12px 10px;
-    border: none;
+/* Input Bar (fixed at bottom) */
+.input-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
     border-top: 1px solid #ccc;
-    outline: none;
+    background: #fafafa;
 }
 
+/* Text Input */
+.input-bar input[type="text"] {
+    flex-grow: 1;
+    font-size: 16px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+/* File Input */
+.input-bar input[type="file"] {
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+/* Send File Button */
+.input-bar button {
+    padding: 10px 16px;
+    font-size: 14px;
+    border: none;
+    background-color: #28a745;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.input-bar button:hover {
+    background-color: #218838;
+}
+
+/* General Buttons */
 button {
     padding: 10px 20px;
     font-size: 16px;
@@ -112,4 +145,51 @@ button {
 
 button:hover {
     background-color: #218838;
+}
+
+/* Download link for files */
+.message.file-download {
+    font-weight: bold;
+    color: #0062cc;
+    text-decoration: none;
+    margin-top: 5px;
+}
+
+.message.file-download:hover {
+    text-decoration: underline;
+}
+
+.file-message {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 280px;
+    word-wrap: break-word;
+}
+
+.file-preview {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.file-download-link {
+    font-weight: bold;
+    text-decoration: none;
+    color: #0062cc;
+    word-break: break-all;
+}
+
+.file-download-link:hover {
+    text-decoration: underline;
+}
+
+.file-type {
+    font-size: 12px;
+    color: #555;
+}
+
+.file-icon {
+    font-size: 20px;
+    color: #444;
 }
