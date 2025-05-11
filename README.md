@@ -76,10 +76,6 @@ A real-time group chat application built with Go and JavaScript, featuring a web
 
 Contributions are welcome! Feel free to fork the repo and submit a pull request for improvements or features.
 
-## License
-
-*No license currently specified — consider adding one to clarify use rights.*
-
 ---
 
 For more projects, visit [arnab-098's GitHub profile](https://github.com/arnab-098/).
